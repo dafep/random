@@ -1,0 +1,108 @@
+#!/bin/sh
+
+# ----------------------------------------------------------------------------------------------------
+#                             Script NSAPOOLD04
+#
+# Auteur: Tristan Henaff
+# Date:2020
+#
+#-----------------------------------------------------------------------------------------------------
+
+SLUG="nsapoold04"
+
+# ----------------------------------------------------------------------------------------------------
+#                                  Task 01
+#-----------------------------------------------------------------------------------------------------
+
+apt install -y php7.3-xml
+
+BACKEND_FILENAME="api-master"
+
+
+
+echo "
+<VirtualHost *:8080>
+    ServerName 10.14.57.200
+    # ServerAlias www.domain.tld
+
+    DocumentRoot /var/www/backend/public
+    <Directory /var/www/backend/public>
+        Options -Indexes +FollowSymLinks -MultiViews
+        AllowOverride All
+        Order Allow,Deny
+        Allow from All
+    </Directory>
+
+    # uncomment the following lines if you install assets as symlinks
+    # or run into problems when compiling LESS/Sass/CoffeeScript assets
+    # <Directory /var/www/backend>
+    #     Options FollowSymlinks
+    # </Directory>
+
+    ErrorLog /var/log/apache2/backend_error.log
+    CustomLog /var/log/apache2/backend_access.log combined
+</VirtualHost>
+" > /etc/apache2/sites-available/backend.conf
+a2ensite backend.conf
+
+systemctl restart apache2
+
+# Insert mysql table
+wget "henaff.dev:8000/nsapoold03/nsapool.sql"
+mysql -uroot < nsapool.sql
+
+a2enmod rewrite
+systemctl restart apache2
+
+
+
+
+
+
+
+
+
+
+MYIP=172.20.10.6
+
+apt install -y php7.3-xml
+mkdir -p /var/www/backend
+git clone https://github.com/Gujinn/nsapoold04.git
+
+echo "
+APP_ENV=prod
+APP_DEBUG=0
+APP_SECRET=df17b38ebf65d296910dac6946ae7a2c
+APP_CHECKSUM=zeaeazeazeazea
+CHECKSUM_ENABLE=0
+DATABASE_URL=\"mysql://root:Nm3ZaMg64@localhost:3306/nsapool?serverVersion=5.7\"
+CORS_ALLOW_ORIGIN=^https?://(localhost|127\.0\.0\.1)(:[0-9]+)?$
+" > /var/www/backend/.env
+
+mv -f nsapoold04/api-master/api/* "/var/www/backend/"
+rm /var/www/backend/composer.lock
+composer install --working-dir=/var/www/backend/
+
+
+echo "
+<VirtualHost *:8080>
+    ServerName $MYIP
+    # ServerAlias www.domain.tld
+
+    DocumentRoot /var/www/backend/public
+    <Directory /var/www/backend/public>
+        Options -Indexes +FollowSymLinks -MultiViews
+        AllowOverride All
+        Order Allow,Deny
+        Allow from All
+    </Directory>
+
+    # uncomment the following lines if you install assets as symlinks
+    # or run into problems when compiling LESS/Sass/CoffeeScript assets
+    # <Directory /var/www/backend>
+    #     Options FollowSymlinks
+    # </Directory>
+
+    ErrorLog /var/log/apache2/backend_error.log
+    CustomLog /var/log/apache2/backend_access.log combined
+</VirtualHost>
